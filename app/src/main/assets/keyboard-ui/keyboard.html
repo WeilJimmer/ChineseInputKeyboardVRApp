@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <script src="jquery-3.7.1.min.js"></script>
+    <title>全螢幕虛擬鍵盤</title>
+</head>
+<body>
+    <div class="main-content">
+        <div class="text-area-container">
+            <textarea class="text-area" id="textArea" placeholder="請輸入文字..."></textarea>
+            <div class="text-display" id="textDisplay"></div>
+        </div>
+        <div class="phonetic-container">
+            <div class="phonetic-label">注音：</div>
+            <div class="phonetic-display" id="phoneticDisplay">
+                <div class="phonetic-char empty">ㄅ</div>
+            </div>
+            <button class="clear-phonetic" id="clearPhonetic">清除</button>
+        </div>
+    </div>
+
+    <div class="keyboard-container" id="keyboardContainer">
+        <div class="resize-handle" id="resizeHandle"></div>
+        <div class="keyboard">
+            <!-- 候選字區域 -->
+            <div class="candidates-row" id="candidatesRow">
+                <div class="candidate" id="candidate1" data-value="">
+                    <span class="number">1</span>
+                    候選字1
+                </div>
+            </div>
+
+            <div class="keyboard-rows">
+                <!-- 第一排：數字鍵 -->
+                <div class="row row1">
+                    <div class="key" id="backtick">`</div>
+                    <div class="key" id="key1" data-value="1" data-special="0">1</div>
+                    <div class="key" id="key2" data-value="2" data-special="0">2</div>
+                    <div class="key" id="key3" data-value="3" data-special="0">3</div>
+                    <div class="key" id="key4" data-value="4" data-special="0">4</div>
+                    <div class="key" id="key5" data-value="5" data-special="0">5</div>
+                    <div class="key" id="key6" data-value="6" data-special="0">6</div>
+                    <div class="key" id="key7" data-value="7" data-special="0">7</div>
+                    <div class="key" id="key8" data-value="8" data-special="0">8</div>
+                    <div class="key" id="key9" data-value="9" data-special="0">9</div>
+                    <div class="key" id="key0" data-value="0" data-special="0">0</div>
+                    <div class="key" id="minus" data-value="-" data-special="0">-</div>
+                    <div class="key" id="equal" data-value="=" data-special="0">=</div>
+                    <div class="key" id="backspace" data-value="←" data-special="1">Backspace</div>
+                </div>
+
+                <!-- 第二排：QWERTY -->
+                <div class="row row2">
+                    <div class="key" id="tab" data-special="1">Tab</div>
+                    <div class="key" id="keyQ" data-value="q" data-special="0">Q</div>
+                    <div class="key" id="keyW" data-value="w" data-special="0">W</div>
+                    <div class="key" id="keyE" data-value="e" data-special="0">E</div>
+                    <div class="key" id="keyR" data-value="r" data-special="0">R</div>
+                    <div class="key" id="keyT" data-value="t" data-special="0">T</div>
+                    <div class="key" id="keyY" data-value="y" data-special="0">Y</div>
+                    <div class="key" id="keyU" data-value="u" data-special="0">U</div>
+                    <div class="key" id="keyI" data-value="i" data-special="0">I</div>
+                    <div class="key" id="keyO" data-value="o" data-special="0">O</div>
+                    <div class="key" id="keyP" data-value="p" data-special="0">P</div>
+                    <div class="key" id="bracketLeft" data-value="[" data-special="0">[</div>
+                    <div class="key" id="bracketRight" data-value="]" data-special="0">]</div>
+                    <div class="key" id="backslash" data-value="\" data-special="0">\</div>
+                </div>
+
+                <!-- 第三排：ASDF -->
+                <div class="row row3">
+                    <div class="key" id="capslock" data-value="capslock" data-special="1">大寫</div>
+                    <div class="key" id="keyA" data-value="a" data-special="0">A</div>
+                    <div class="key" id="keyS" data-value="s" data-special="0">S</div>
+                    <div class="key" id="keyD" data-value="d" data-special="0">D</div>
+                    <div class="key" id="keyF" data-value="f" data-special="0">F</div>
+                    <div class="key" id="keyG" data-value="g" data-special="0">G</div>
+                    <div class="key" id="keyH" data-value="h" data-special="0">H</div>
+                    <div class="key" id="keyJ" data-value="j" data-special="0">J</div>
+                    <div class="key" id="keyK" data-value="k" data-special="0">K</div>
+                    <div class="key" id="keyL" data-value="l" data-special="0">L</div>
+                    <div class="key" id="semicolon" data-value=";" data-special="0">;</div>
+                    <div class="key" id="quote" data-value="'" data-special="0">'</div>
+                    <div class="key" id="enter" data-value="enter" data-special="1">Enter</div>
+                </div>
+
+                <!-- 第四排：ZXCV -->
+                <div class="row row4">
+                    <div class="key shift" id="shiftLeft" data-value="shift" data-special="1">Shift</div>
+                    <div class="key" id="keyZ" data-value="z" data-special="0">Z</div>
+                    <div class="key" id="keyX" data-value="x" data-special="0">X</div>
+                    <div class="key" id="keyC" data-value="c" data-special="0">C</div>
+                    <div class="key" id="keyV" data-value="v" data-special="0">V</div>
+                    <div class="key" id="keyB" data-value="b" data-special="0">B</div>
+                    <div class="key" id="keyN" data-value="n" data-special="0">N</div>
+                    <div class="key" id="keyM" data-value="m" data-special="0">M</div>
+                    <div class="key" id="comma" data-value="," data-special="0">,</div>
+                    <div class="key" id="period" data-value="." data-special="0">.</div>
+                    <div class="key" id="slash" data-value="/" data-special="0">/</div>
+                    <div class="key shift" id="shiftRight" data-value="shift" data-special="1">Shift</div>
+                </div>
+
+                <!-- 第五排：空格列 -->
+                <div class="row row5">
+                    <div class="key" id="ctrlLeft" data-special="1">複製</div>
+                    <div class="key" id="symbol" data-special="1">?123</div>
+                    <div class="key" id="altLeft" data-special="1">Eng</div>
+                    <div class="key" id="space" data-special="0"></div>
+                    <div class="key" id="altRight" data-special="1">半</div>
+                    <div class="key" id="fun" data-special="1">⚙️</div>
+                    <div class="key" id="menu" data-special="1">Menu</div>
+                    <div class="key" id="ctrlRight" data-special="1">複製</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 拖拽調整鍵盤高度功能
+        let isResizing = false;
+        let startY = 0;
+        let startHeight = 0;
+
+        const keyboardContainer = document.getElementById('keyboardContainer');
+        const resizeHandle = document.getElementById('resizeHandle');
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startY = e.clientY;
+            startHeight = parseInt(getComputedStyle(keyboardContainer).height);
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            e.preventDefault();
+        });
+
+        function handleMouseMove(e) {
+            if (!isResizing) return;
+            const deltaY = startY - e.clientY;
+            const maxAllowedHeight = window.innerHeight - 160;
+            const newHeight = Math.max(200, Math.min(maxAllowedHeight, startHeight + deltaY));
+            document.documentElement.style.setProperty('--keyboard-height', newHeight + 'px');
+        }
+
+        function handleMouseUp() {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        }
+
+        // 觸控設備支援
+        resizeHandle.addEventListener('touchstart', (e) => {
+            isResizing = true;
+            startY = e.touches[0].clientY;
+            startHeight = parseInt(getComputedStyle(keyboardContainer).height);
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchend', handleTouchEnd);
+            e.preventDefault();
+        });
+
+        function handleTouchMove(e) {
+            if (!isResizing) return;
+            const deltaY = startY - e.touches[0].clientY;
+            const maxAllowedHeight = window.innerHeight - 160; // 保留160px給注音區域
+            const newHeight = Math.max(200, Math.min(maxAllowedHeight, startHeight + deltaY));
+            document.documentElement.style.setProperty('--keyboard-height', newHeight + 'px');
+        }
+
+        function handleTouchEnd() {
+            isResizing = false;
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+        }
+
+
+        // 自訂游標系統
+        let cursorPosition = 0;
+        const textArea = document.getElementById('textArea');
+        const textDisplay = document.getElementById('textDisplay');
+
+        function updateTextDisplay() {
+            const text = textArea.value;
+            const beforeCursor = text.substring(0, cursorPosition);
+            const afterCursor = text.substring(cursorPosition);
+            
+            // 計算游標高度（基於字體大小）
+            const fontSize = window.getComputedStyle(textDisplay).fontSize;
+            const lineHeight = window.getComputedStyle(textDisplay).lineHeight;
+            const cursorHeight = lineHeight !== 'normal' ? lineHeight : fontSize;
+            
+            textDisplay.innerHTML = escapeHtml(beforeCursor) + `<span class="custom-cursor" style="height: ${cursorHeight}"></span>` + escapeHtml(afterCursor);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function setCursorPosition(pos) {
+            cursorPosition = Math.max(0, Math.min(pos, textArea.value.length));
+            updateTextDisplay();
+        }
+
+        // 同步 textarea 內容變化
+        textArea.addEventListener('input', () => {
+            // 當內容改變時，保持游標位置
+            const newPosition = textArea.selectionStart;
+            setCursorPosition(newPosition);
+        });
+
+        // 監聽 textarea 的游標位置變化
+        textArea.addEventListener('selectionchange', () => {
+            setCursorPosition(textArea.selectionStart);
+        });
+
+        textArea.addEventListener('keyup', () => {
+            setCursorPosition(textArea.selectionStart);
+        });
+
+        textArea.addEventListener('mouseup', () => {
+            setCursorPosition(textArea.selectionStart);
+        });
+
+        // 點擊文字顯示區域時，設定游標位置
+        textDisplay.addEventListener('click', (e) => {
+            textArea.focus();
+            // 這裡可以加入更精確的位置計算邏輯
+        });
+
+    </script>
+    <script src="keyevent.js"></script>
+</body>
+</html>

@@ -1,13 +1,24 @@
 package org.wbftw.weil.chinese_keyboard
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.webkit.JavascriptInterface
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CornerSize
@@ -15,15 +26,16 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.xr.compose.platform.LocalHasXrSpatialFeature
 import androidx.xr.compose.platform.LocalSpatialCapabilities
 import androidx.xr.compose.platform.LocalSpatialConfiguration
@@ -38,7 +50,90 @@ import androidx.xr.compose.subspace.layout.height
 import androidx.xr.compose.subspace.layout.movable
 import androidx.xr.compose.subspace.layout.resizable
 import androidx.xr.compose.subspace.layout.width
+import org.wbftw.weil.chinese_keyboard.converter.JsonConverter
+import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodCandidateManager
+import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodPathOptimizer
+import org.wbftw.weil.chinese_keyboard.input.utils.CandidateClass
+import org.wbftw.weil.chinese_keyboard.loader.DictionaryLoader
 import org.wbftw.weil.chinese_keyboard.ui.theme.Chinese_keyboardTheme
+
+
+// JavaScript Bridge
+class InputMethodBridge(
+    private val context: Context,
+) {
+
+    private val TAG = "InputMethodBridge"
+    val pageConfigure = CandidateClass.PageConfigure(
+        perPageSize = 9,         // 每頁顯示的候選字數量
+        maxCandidatesPerPath = 3 // 每條路徑的候選字數量限制
+    )
+    val rootNode = DictionaryLoader.loadDictionary(context)
+    var engine: InputMethodCandidateManager? = null
+    var optimizer: InputMethodPathOptimizer? = null
+    var nextPossiblePath: List<Char>? = listOf()
+
+    init {
+        rootNode?.let {
+            engine = InputMethodCandidateManager(it, pageConfigure)
+            optimizer = InputMethodPathOptimizer(it)
+        }
+    }
+
+    /**
+     * 取得當前頁的候選字列表 JSON 格式
+     * @param input 用戶輸入的字符串，例如 "e04"
+     * @return 候選字列表的 JSON 字符串
+     */
+    @JavascriptInterface
+    fun getCandidatesFromInput(input: String): String {
+        engine?.let {
+            nextPossiblePath = it.setInput(input)
+            val result = it.getCurrentPageCandidates()
+            return JsonConverter.candidatesListToJson(result)
+        }
+        return "[]"
+    }
+
+    @JavascriptInterface
+    fun getNextPossiblePath(): String {
+        return JsonConverter.charListToJson(nextPossiblePath)
+    }
+
+    @JavascriptInterface
+    fun getNextCandidates(): String {
+        engine?.let {
+            // TODO: 檢查是否有下一頁
+        }
+        return "[]"
+    }
+
+    fun setPromoteCandidate(candidatePairJson: String) {
+        optimizer?.let {
+            val candidatePair = JsonConverter.parseCandidatePairFromJson(candidatePairJson)
+            if (candidatePair != null) {
+                it.optimizePath(candidatePair)
+            } else {
+                Log.e(TAG, "Failed to parse candidate pair from JSON: $candidatePairJson")
+            }
+        } ?: run {
+            Log.e(TAG, "Optimizer is not initialized.")
+        }
+    }
+
+    @JavascriptInterface
+    fun copyToClipboard(text: String) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("輸入文字", text)
+        clipboard.setPrimaryClip(clip)
+        Log.d(TAG, "Copied to clipboard: $text")
+    }
+
+    @JavascriptInterface
+    fun log(message: String) {
+        Log.d(TAG, "JavaScript Log: $message")
+    }
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -67,12 +162,14 @@ class MainActivity : ComponentActivity() {
 @SuppressLint("RestrictedApi")
 @Composable
 fun MySpatialContent(onRequestHomeSpaceMode: () -> Unit) {
-    SpatialPanel(SubspaceModifier.width(1280.dp).height(800.dp).resizable().movable()) {
-        Surface {
-            MainContent(
+    SpatialPanel(SubspaceModifier.width(1280.dp).height(400.dp).resizable().movable()) {
+        Surface (
+            color = androidx.compose.ui.graphics.Color.Transparent
+        ) {
+            InputMethodWebView(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(48.dp)
+                    .padding(16.dp)
             )
         }
         Orbiter(
@@ -92,12 +189,19 @@ fun MySpatialContent(onRequestHomeSpaceMode: () -> Unit) {
 @SuppressLint("RestrictedApi")
 @Composable
 fun My2DContent(onRequestFullSpaceMode: () -> Unit) {
-    Surface {
+    Surface (
+        color = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.fillMaxSize().height(400.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            MainContent(modifier = Modifier.padding(48.dp))
+            InputMethodWebView(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(16.dp)
+            )
             if (LocalHasXrSpatialFeature.current) {
                 FullSpaceModeIconButton(
                     onClick = onRequestFullSpaceMode,
@@ -108,9 +212,68 @@ fun My2DContent(onRequestFullSpaceMode: () -> Unit) {
     }
 }
 
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
-fun MainContent(modifier: Modifier = Modifier) {
-    Text(text = stringResource(R.string.hello_android_xr), modifier = modifier)
+fun InputMethodWebView(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    //val engine = remember { InputMethodEngine() }
+    //val bridge = remember { InputMethodBridge(context, engine) }
+
+    AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            WebView(ctx).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.allowFileAccess = true
+                settings.allowContentAccess = true
+                // 設定WebView背景透明
+                setBackgroundColor(Color.TRANSPARENT)
+                background = null
+
+                // 啟用硬體加速（XR需要）
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+
+                settings.apply {
+                    // 支援透明度混合
+                    setRenderPriority(WebSettings.RenderPriority.HIGH)
+                    cacheMode = WebSettings.LOAD_NO_CACHE
+
+                    // XR相關設定
+                    allowFileAccess = true
+                    allowContentAccess = true
+                    domStorageEnabled = true
+                }
+
+                addJavascriptInterface(
+                    InputMethodBridge(context),
+                    "InputMethodBridge"
+                )
+
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        // 頁面載入完成後的初始化
+                    }
+                }
+
+                // 載入 HTML
+                loadUrl(getInputKeyboardUrl())
+
+                // 使 webview size 適應螢幕
+                layoutParams = android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+
+        }
+    )
+}
+
+fun getInputKeyboardUrl(): String {
+    // get file from assets
+    return "file:///android_asset/keyboard-ui/keyboard.html"
 }
 
 @Composable
