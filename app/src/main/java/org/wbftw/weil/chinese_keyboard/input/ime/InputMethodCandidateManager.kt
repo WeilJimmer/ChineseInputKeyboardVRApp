@@ -1,6 +1,5 @@
 package org.wbftw.weil.chinese_keyboard.input.ime
 
-import android.nfc.Tag
 import android.util.Log
 import org.wbftw.weil.chinese_keyboard.input.utils.CandidateClass
 import org.wbftw.weil.chinese_keyboard.input.utils.UltraEfficientCandidateProvider
@@ -87,13 +86,17 @@ class InputMethodCandidateManager(
             pageConfigure = pageConfigure
         )
         // 更新下一頁搜索狀態
-        val lastCandidate = result.candidates.lastOrNull()
         hasNextPage = result.hasNextPage
-        nextSearchState = CandidateClass.NodeSearchState(
-            nodeIndex = currentSearchState.nodeIndex,
-            extractedCandidate = (lastCandidate?.wordIndex ?: 0) + 1,
-            currentSearchPage = (result.currentPage + 1)
-        )
+        if (hasNextPage && result.candidates.isNotEmpty()) {
+            val lastCandidate = result.candidates.last()
+            nextSearchState = CandidateClass.NodeSearchState(
+                startNodeIndex = lastCandidate.nodeIndex,
+                extractedCandidate = (lastCandidate.wordIndex + 1),
+                currentSearchPage = (result.currentPage + 1)
+            )
+        }
+        println(currentSearchState)
+        println(nextSearchState)
         return result
     }
 
@@ -101,24 +104,39 @@ class InputMethodCandidateManager(
      * 獲取下一頁
      */
     fun getNextPageCandidates(): List<CandidateClass.CandidatePair> {
-        val node = currentNode ?: return emptyList()
+        return getNextPageCandidatesFullInformation().candidates.map {
+            CandidateClass.CandidatePair.from(it)
+        }
+    }
 
-        currentSearchState = if (hasNextPage){
+
+    fun getNextPageCandidatesFullInformation(): CandidateClass.CandidateResult {
+        if (currentNode==null){
+            Log.e(TAG, "Current node is null, cannot get next page candidates.")
+            return CandidateClass.CandidateResult() // 如果沒有當前節點，返回空結果
+        }
+
+        currentSearchState = if (hasNextPage) {
             // 如果有下一頁，使用下一頁的搜索狀態
             nextSearchState
         } else {
             // 否則，從頭開始搜索
+            Log.e(TAG, "No next page available, resetting search state.")
             CandidateClass.NodeSearchState()
         }
 
-        return getCurrentPageCandidates()
+        return getCurrentPageCandidatesFullInformation()
     }
+
 
     /**
      * 獲取上一頁
      */
     fun getPrevPageCandidates(): List<CandidateClass.CandidatePair> {
-        val node = currentNode ?: return emptyList()
+        if (currentNode==null){
+            Log.e(TAG, "Current node is null, cannot get previous page candidates.")
+            return emptyList() // 如果沒有當前節點，返回空列表
+        }
 
         // 如果當前頁索引為0，則無法返回上一頁
         if (currentSearchState.currentSearchPage <= 0) {
@@ -126,7 +144,7 @@ class InputMethodCandidateManager(
         }else{
             // 如果當前頁索引大於0，則返回上一頁
             currentSearchState = CandidateClass.NodeSearchState(
-                nodeIndex = currentSearchState.nodeIndex,
+                startNodeIndex = currentSearchState.startNodeIndex,
                 extractedCandidate = currentSearchState.extractedCandidate,
                 currentSearchPage = currentSearchState.currentSearchPage - 1
             )
@@ -140,6 +158,13 @@ class InputMethodCandidateManager(
      */
     fun getCurrentNodeFullPath(): List<Char> {
         return currentNode?.getFullPath() ?: emptyList()
+    }
+
+    /**
+     * 獲取是否有下一頁
+     */
+    fun hasNextPage(): Boolean {
+        return hasNextPage
     }
 
 }

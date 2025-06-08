@@ -1,14 +1,21 @@
 // keyevent.js
 // 處理鍵盤事件和注音輸入
 
+// ========== Mode Region ==========
 var keyMode = 'Eng' // 預設為英文模式
 var capLock = false; // Caps Lock 狀態
 var symbolMode = false; // 符號模式
 var halfWidth = true; // 半形狀態
 var shiftPressed = false; // Shift 鍵狀態
+
+// ========== Input Region ==========
 var phoneticBuffer = [];
 var candidateList = []; // 候選字列表
 var nextPath = ['*']; // 下一個可能的路徑
+
+// ========== UI Region ==========
+var currentPage = 0; // 當前頁面
+var hasNextPage = false; // 是否有下一頁
 const maxPhoneticLength = 4;
 
 const fullWidthChars = {
@@ -33,11 +40,12 @@ const fullWidthChars = {
     '"': '＂', ':': '：', '?': '？', '~': '～', '…': '…'
 };
 
+/*
+    切換鍵盤模式
+*/
 function switchMode() {
-    // 切換鍵盤模式
-    phoneticBuffer = [];
-    candidateList = [];
-    nextPath = [];
+    clearPhonetic();
+    $('.key').removeClass('phonetic');
     $('.phonetic-container').hide();
     $('#backtick').text('`');$('#equal').text('=');$('#bracketLeft').text('[');$('#bracketRight').text(']');$('#backslash').text('\\');$('#quote').text('\'');
     if (symbolMode) {
@@ -53,12 +61,13 @@ function switchMode() {
         $('#key0').text('0');$('#keyP').text(')');$('#semicolon').text(';');$('#slash').text('/');
         $('#minus').text('-');
     }else if (keyMode === '中' && !shiftPressed) {
+        $('.key').addClass('phonetic');
         $('#key1').text('ㄅ');$('#keyQ').text('ㄆ');$('#keyA').text('ㄇ');$('#keyZ').text('ㄈ');
         $('#key2').text('ㄉ');$('#keyW').text('ㄊ');$('#keyS').text('ㄋ');$('#keyX').text('ㄌ');
-        $('#key3').text('Ｖ');$('#keyE').text('ㄍ');$('#keyD').text('ㄎ');$('#keyC').text('ㄏ');
-        $('#key4').text('＼');$('#keyR').text('ㄐ');$('#keyF').text('ㄑ');$('#keyV').text('ㄒ');
+        $('#key3').text('˅');$('#keyE').text('ㄍ');$('#keyD').text('ㄎ');$('#keyC').text('ㄏ');
+        $('#key4').text('⸌');$('#keyR').text('ㄐ');$('#keyF').text('ㄑ');$('#keyV').text('ㄒ');
         $('#key5').text('ㄓ');$('#keyT').text('ㄔ');$('#keyG').text('ㄕ');$('#keyB').text('ㄖ');
-        $('#key6').text('／');$('#keyY').text('ㄗ');$('#keyH').text('ㄘ');$('#keyN').text('ㄙ');
+        $('#key6').text('⁄');$('#keyY').text('ㄗ');$('#keyH').text('ㄘ');$('#keyN').text('ㄙ');
         $('#key7').text('．');$('#keyU').text('一');$('#keyJ').text('ㄨ');$('#keyM').text('ㄩ');
         $('#key8').text('ㄚ');$('#keyI').text('ㄛ');$('#keyK').text('ㄜ');$('#comma').text('ㄝ');
         $('#key9').text('ㄞ');$('#keyO').text('ㄟ');$('#keyL').text('ㄠ');$('#period').text('ㄡ');
@@ -107,18 +116,23 @@ function switchMode() {
     updatePhoneticDisplay();
 }
 
-function getNextPossiblePath() {
+function setInput() {
     if (!InputMethodBridge || phoneticBuffer.length == 0) return;
-    const nextPathJson = InputMethodBridge.getNextPossiblePath();
-    console.log(`下一個可能的路徑：${nextPathJson}`);
-    nextPath = JSON.parse(nextPathJson);
+    const phoneticString = phoneticBuffer.map(p => p.p).join('');
+    if (phoneticString!== '') {
+        processCandidateList(InputMethodBridge.getCandidatesFromInput(phoneticString));
+    } else {
+        console.error('無法獲取候選字列表');
+    }
 }
 
-function getCandidateList() {
-    if (!InputMethodBridge || phoneticBuffer.length == 0) return
-    const phoneticString = phoneticBuffer.map(p => p.p).join('');
-    candidateList = JSON.parse(InputMethodBridge.getCandidatesFromInput(phoneticString));
+function processCandidateList(candidateResultJson) {
+    let candidateResult = JSON.parse(candidateResultJson);
+    candidateList = candidateResult.words || [];
+    nextPath = candidateResult.chars || ['*'];
+    hasNextPage = candidateResult.hasNextPage || false;
     updateCandidates(candidateList)
+    console.log(`下一個可能的路徑：${nextPathJson}`);
 }
 
 function updatePhoneticDisplay() {
@@ -138,10 +152,15 @@ function updatePhoneticDisplay() {
     }
 }
 
+/*
+    清除注音暫存區和候選字列表
+*/
 function clearPhonetic() {
     phoneticBuffer = [];
     candidateList = [];
     nextPath = ['*'];
+    currentPage = 0;
+    hasNextPage = false;
     updatePhoneticDisplay();
 }
 
@@ -165,8 +184,7 @@ function addPhonetic(char, keyValue) {
         }
         phoneticBuffer.push({w: char, p: keyValue});
         updatePhoneticDisplay();
-        getCandidateList();
-        getNextPossiblePath();
+        setInput();
         return true;
     }
     return false;
@@ -176,20 +194,30 @@ function backspacePhonetic() {
     if (phoneticBuffer.length > 0) {
         phoneticBuffer.pop();
         updatePhoneticDisplay();
-        getCandidateList();
-        getNextPossiblePath();
+        setInput();
         return true;
     }
-    if (phoneticBuffer.length === 0) {
-        nextPath = ['*']; // 清除下一個可能的路徑
-    }
+    // 如果注音暫存區已經沒有內容，則不進行任何操作
+    nextPath = ['*']; // 清除下一個可能的路徑
     return false;
 }
 
 
 function updateCandidates(candidates) {
-    const candidatesRow = document.getElementById('candidatesRow');
-    candidatesRow.innerHTML = '';
+    const candidateRow = document.getElementById('candidateRow');
+    candidateRow.innerHTML = '';
+    if (hasNextPage){
+        candidates.push({
+            w : '→',
+            p : '|next|'
+        });
+    }
+    if (currentPage>0){
+        candidates.unshift({
+            w : '←',
+            p : '|prev|'
+        });
+    }
     candidates.forEach((candidate, index) => {
         let word = candidate;
         let path = '';
@@ -201,14 +229,20 @@ function updateCandidates(candidates) {
         candidateElement.setAttribute('data-value', word);
         candidateElement.setAttribute('data-path', path);
         candidateElement.className = 'candidate';
-        candidateElement.id = `candidate${index + 1}`;
+        if (path=='|next|'){
+            candidateElement.id = 'next_candidate';
+        }else if (path=='|prev|'){
+            candidateElement.id = 'prev_candidate';
+        }else{
+            candidateElement.id = `candidateWord${index + 1}`;
+        }
         candidateElement.innerHTML = `
             <span class="number">${index + 1}</span>
             ${word}
         `;
-        candidatesRow.appendChild(candidateElement);
+        candidateRow.appendChild(candidateElement);
     });
-    document.querySelectorAll('.candidate').forEach(candidate => {
+    document.querySelectorAll('[id^="candidateWord"]').forEach(candidate => {
         candidate.addEventListener('click', function() {
             const selectedValue = this.getAttribute('data-value');
             console.log(`選擇候選字：${selectedValue}`);
@@ -217,8 +251,28 @@ function updateCandidates(candidates) {
             }
             insertTextAtCursor(selectedValue);
             // 清除候選字顯示
-            this.parentNode.innerHTML = '';
+            candidateRow.innerHTML = '';
         });
+    });
+    // 處理下一頁按鈕
+    $('#next_candidate').on('click', function() {
+        if (hasNextPage) {
+            currentPage++;
+            console.log(`切換到下一頁：${currentPage}`);
+            processCandidateList(InputMethodBridge.getNextCandidates());
+        } else {
+            console.log('沒有下一頁');
+        }
+    });
+    // 處理上一頁按鈕
+    $('#prev_candidate').on('click', function() {
+        if (currentPage > 0) {
+            currentPage--;
+            console.log(`切換到上一頁：${currentPage}`);
+            processCandidateList(InputMethodBridge.getPrevCandidates());
+        } else {
+            console.log('已經是第一頁');
+        }
     });
 }
 
@@ -229,6 +283,7 @@ function copyToClipboard(text) {
 }
 
 function insertTextAtCursor(text) {
+    if (text==null) return;
     const textArea = document.getElementById('textArea');
     const start = textArea.selectionStart;
     const end = textArea.selectionEnd;
@@ -281,8 +336,6 @@ updatePhoneticDisplay();
 
 // 使用範例
 updateCandidates(['中', '文', '輸入法', 'by', 'Weil Jimmer']);
-
-// special key handling
 
 // 模式事件
 $('#altLeft').on('click', () => {

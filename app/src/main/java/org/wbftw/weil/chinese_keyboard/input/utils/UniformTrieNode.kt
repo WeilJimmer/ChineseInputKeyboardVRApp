@@ -120,7 +120,7 @@ data class UniformTrieNode(
 
     /**
      * 獲取推廣候選字列表
-     * @return 返回候選字列表，按長度降序排列
+     * @return 返回候選字列表，從優先級最高到最低。(內部結構，最末尾為最高優先級)
      */
     fun getPromoteCandidates(index: Int, limit: Int = 0): List<String>{
         if (candidates.isEmpty()) {

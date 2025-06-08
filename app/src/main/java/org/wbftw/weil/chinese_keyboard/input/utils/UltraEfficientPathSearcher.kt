@@ -63,7 +63,7 @@ class UltraEfficientPathSearcher() {
      * @return 返回候選字列表
      */
     fun findCandidateByNodeWithLimit(node: UniformTrieNode): List<String> {
-        val percent = 0.01 // 1% 的候選字數量限制
+        val percent = 0.3 // 30% 的候選字數量限制，假定平均為 10 候選字，選 3 個候選字。
         val maxLength = 5
         val candidatesSize = node.getCandidatesSize()
         val targetCount = (candidatesSize * percent).toInt().coerceAtMost(maxLength).coerceAtLeast(1)
@@ -101,8 +101,9 @@ class UltraEfficientPathSearcher() {
             Direction.FORWARD -> {
                 // 正向搜索 (新增或更新快取)
                 val pair = searchForCandidatesForward(
-                    start = searchState.nodeIndex,
-                    end = bfsResultCache!!.size,
+                    startNodeIndex = searchState.startNodeIndex,
+                    endNodeIndex = bfsResultCache!!.size,
+                    extractedCandidate = searchState.extractedCandidate,
                     perPage = perPage
                 )
                 hasNextPage = pair.first // 是否有下一頁
@@ -133,24 +134,28 @@ class UltraEfficientPathSearcher() {
 
     /**
      * 正向搜索候選字
-     * @param start 起始節點索引
-     * @param end 結束節點索引
+     * @param startNodeIndex 起始節點索引
+     * @param endNodeIndex 結束節點索引
+     * @param extractedCandidate 已提取的候選字數量
      * @param perPage 每頁顯示的候選字數量
      * @return 返回一個包含是否有下一頁和候選字列表的Pair
      */
-    fun searchForCandidatesForward(start: Int, end: Int, perPage: Int): Pair<Boolean, List<CandidateClass.CandidateDetail>>{
+    fun searchForCandidatesForward(startNodeIndex: Int, endNodeIndex: Int, extractedCandidate: Int, perPage: Int): Pair<Boolean, List<CandidateClass.CandidateDetail>>{
         val resultCandidates: MutableList<CandidateClass.CandidateDetail> = mutableListOf()
         var hasNextPage = false
-        for (ni in start until end) {
+        for (ni in startNodeIndex until endNodeIndex) { //endNodeIndex is last bfsResultCache index, meaning the end of the search
             val node = bfsResultCache!![ni]
             val nodeFullPath: List<Char> = node.getFullPath()
             val nodeCandidates: List<String> = findCandidateByNodeWithLimit(node) // 候選字已被限制數量
 
-            for (wi in 0 until nodeCandidates.size) {
-                if (resultCandidates.size >= perPage){
-                    hasNextPage = true // 超過每頁限制，標記為有下一頁
-                    break  // 超過每頁限制則停止
-                }
+            if (resultCandidates.size >= perPage){
+                hasNextPage = true // 超過每頁限制，標記為有下一頁
+                break  // 超過每頁限制則停止
+            }
+            if (extractedCandidate >= nodeCandidates.size) {
+                continue // 這個 node 的候選字已經用完，跳到下一個 node
+            }
+            for (wi in extractedCandidate until nodeCandidates.size) {
                 val candidate = nodeCandidates[wi]
                 resultCandidates.add(
                     CandidateClass.CandidateDetail(
@@ -160,10 +165,10 @@ class UltraEfficientPathSearcher() {
                         nodeIndex = ni
                     )
                 )
-            }
-            if (resultCandidates.size >= perPage) {
-                hasNextPage = true // 超過每頁限制，標記為有下一頁
-                break // 超過每頁限制則停止
+                if (resultCandidates.size >= perPage){
+                    hasNextPage = true // 超過每頁限制，標記為有下一頁
+                    break  // 超過每頁限制則停止
+                }
             }
         }
         return Pair(hasNextPage, resultCandidates.toList())

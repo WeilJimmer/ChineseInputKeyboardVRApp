@@ -84,6 +84,10 @@ body {
 	position: relative;
 }
 
+.phonetic {
+	font-family: Arial, Helvetica, sans-serif;
+}
+
 .phonetic-container {
 	height: 80px;
 	min-height: 80px;

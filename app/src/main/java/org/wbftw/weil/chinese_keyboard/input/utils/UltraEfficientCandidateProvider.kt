@@ -8,7 +8,6 @@ package org.wbftw.weil.chinese_keyboard.input.utils
 class UltraEfficientCandidateProvider {
 
     private val searcher = UltraEfficientPathSearcher()
-    private var currentSearchState = CandidateClass.NodeSearchState()
 
     /**
      * 獲取候選字 - 根據節點類型選擇最優策略
@@ -88,7 +87,7 @@ class UltraEfficientCandidateProvider {
     ): CandidateClass.CandidateResult {
 
         searcher.bfsSearch(node) // 使用路徑搜索器
-        return searcher.getCurrentPageResult(currentSearchState, perPageSize)
+        return searcher.getCurrentPageResult(searchState, perPageSize)
 
     }
 
@@ -97,7 +96,6 @@ class UltraEfficientCandidateProvider {
      */
     fun clearCache() {
         searcher.clearCache() // 清除搜索器的快取
-        currentSearchState = CandidateClass.NodeSearchState() // 重置搜索狀態
     }
 }
 

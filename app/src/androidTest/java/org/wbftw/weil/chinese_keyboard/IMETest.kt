@@ -77,7 +77,7 @@ class IMETest {
     }
 
     @Test
-    fun testGetCandidateListWithPage() {
+    fun testGetCandidateListCurrentPage() {
         // 測試獲取候選字列表，帶有分頁
         assert(dictionary != null) { "Dictionary should not be null after loading." }
 
@@ -112,6 +112,42 @@ class IMETest {
 
         }
 
+    }
+
+    @Test
+    fun testGetCandidateListNextPage(){
+        assert(dictionary != null) { "Dictionary should not be null after loading." }
+
+        dictionary?.let{
+            val pageConfigure = CandidateClass.PageConfigure( perPageSize = 3, maxCandidatesPerPath = 10)
+            val candidateManager = InputMethodCandidateManager(dictionary!!, pageConfigure)
+
+            var candidatesResult : CandidateClass.CandidateResult
+            var candidatesPair: List<CandidateClass.CandidatePair> = emptyList()
+
+            candidateManager.setInput("u")
+
+            candidatesResult = candidateManager.getCurrentPageCandidatesFullInformation()
+            candidatesPair = candidatesResult.candidates.map { CandidateClass.CandidatePair.from(it) }
+            println("[Test] Candidates with path for 'u' (Page 1): $candidatesPair")
+            println("[Test] Has next page: ${candidatesResult.hasNextPage}, Current page: ${candidatesResult.currentPage}")
+            assert(candidatesPair.isNotEmpty()) { "Candidates with path for 'u' should not be empty." }
+
+            // 獲取下一頁
+            candidatesResult = candidateManager.getNextPageCandidatesFullInformation()
+            candidatesPair = candidatesResult.candidates.map { CandidateClass.CandidatePair.from(it) }
+            println("[Test] Candidates with path for 'u' (Page 2): $candidatesPair")
+            println("[Test] Has next page: ${candidatesResult.hasNextPage}, Current page: ${candidatesResult.currentPage}")
+            assert(candidatesPair.isNotEmpty()) { "Candidates with path for 'u' should not be empty." }
+
+            // 獲取第三頁
+            candidatesResult = candidateManager.getNextPageCandidatesFullInformation()
+            candidatesPair = candidatesResult.candidates.map { CandidateClass.CandidatePair.from(it) }
+            println("[Test] Candidates with path for 'u' (Page 3): $candidatesPair")
+            println("[Test] Has next page: ${candidatesResult.hasNextPage}, Current page: ${candidatesResult.currentPage}")
+            assert(candidatesPair.isNotEmpty()) { "Candidates with path for 'u' should not be empty." }
+
+        }
     }
 
 

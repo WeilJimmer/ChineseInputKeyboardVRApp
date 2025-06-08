@@ -59,6 +59,7 @@ import org.wbftw.weil.chinese_keyboard.ui.theme.Chinese_keyboardTheme
 
 
 // JavaScript Bridge
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 class InputMethodBridge(
     private val context: Context,
 ) {
@@ -69,6 +70,7 @@ class InputMethodBridge(
         maxCandidatesPerPath = 3 // 每條路徑的候選字數量限制
     )
     val rootNode = DictionaryLoader.loadDictionary(context)
+    val defaultResponse = """"{"words":[], "chars": [], "hasNextPage": false}"""
     var engine: InputMethodCandidateManager? = null
     var optimizer: InputMethodPathOptimizer? = null
     var nextPossiblePath: List<Char>? = listOf()
@@ -90,22 +92,42 @@ class InputMethodBridge(
         engine?.let {
             nextPossiblePath = it.setInput(input)
             val result = it.getCurrentPageCandidates()
-            return JsonConverter.candidatesListToJson(result)
+            val hasNextPage = it.hasNextPage()
+            return JsonConverter.candidatesResultToJson(
+                result,
+                nextPossiblePath,
+                hasNextPage
+            )
         }
-        return "[]"
-    }
-
-    @JavascriptInterface
-    fun getNextPossiblePath(): String {
-        return JsonConverter.charListToJson(nextPossiblePath)
+        return defaultResponse
     }
 
     @JavascriptInterface
     fun getNextCandidates(): String {
         engine?.let {
-            // TODO: 檢查是否有下一頁
+            val result = it.getNextPageCandidates()
+            val hasNextPage = it.hasNextPage()
+            return JsonConverter.candidatesResultToJson(
+                result,
+                nextPossiblePath,
+                hasNextPage
+            )
         }
-        return "[]"
+        return defaultResponse
+    }
+
+    @JavascriptInterface
+    fun getPrevCandidates(): String {
+        engine?.let {
+            val result = it.getPrevPageCandidates()
+            val hasNextPage = it.hasNextPage()
+            return JsonConverter.candidatesResultToJson(
+                result,
+                nextPossiblePath,
+                hasNextPage
+            )
+        }
+        return defaultResponse
     }
 
     fun setPromoteCandidate(candidatePairJson: String) {

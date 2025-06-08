@@ -40,7 +40,7 @@ class CandidateClass {
      * 路徑搜索狀態 - 記錄路徑的搜索進度
      */
     data class NodeSearchState(
-        val nodeIndex: Int = 0,          // 當前節點在 BFS 序列中的索引
+        val startNodeIndex: Int = 0,     // 當前節點在 BFS 序列中的索引
         val extractedCandidate: Int = 0, // 已提取的候選字數量
         val currentSearchPage: Int = 0   // 當前搜索的頁碼(從0開始)
     )
