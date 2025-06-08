@@ -9,7 +9,7 @@
 
 ## 🎥 示範影片
 
-[![](docs/demo/screenshot.jpg)](docs/demo/demo.mp4)  
+[![](docs/demo/screenshot.jpg)](https://www.youtube.com/watch?v=zS9Z87I9FyQ)  
 _點擊上圖觀看影片示範_
 
 ---
