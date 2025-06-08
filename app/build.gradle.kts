@@ -12,19 +12,26 @@ android {
         applicationId = "org.wbftw.weil.chinese_keyboard"
         minSdk = 34
         targetSdk = 36
-        versionCode = 90
-        versionName = "0.9.0"
+        versionCode = 99
+        versionName = "0.9.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            resValue("string", "app_name", "@string/app_name")
+            buildConfigField("Boolean","DEBUG","false")
+        }
+        debug {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            isShrinkResources = false
+            applicationIdSuffix = ".dev"
+            isDebuggable = true
+            resValue("string", "app_name", "@string/app_name_dev")
+            buildConfigField("Boolean","DEBUG","true")
         }
     }
     compileOptions {
@@ -36,6 +43,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     testOptions {
         unitTests {

@@ -53,7 +53,7 @@ class InputMethodCandidateManager(
         currentSearchState = CandidateClass.NodeSearchState() // 重置搜索狀態
         provider.clearCache()
         if (currentNode?.isFinalNode() == true){
-            return listOf('*')
+            return listOf() // 如果是終端節點，則返回空列表
         }else if (currentNode?.isNotFinalNode() == true) {
             // 如果是非終端節點，則返回該節點的子節點鍵
             return currentNode?.getOrderedChildrenKeys()

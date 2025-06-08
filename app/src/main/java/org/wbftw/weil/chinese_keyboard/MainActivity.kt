@@ -130,11 +130,17 @@ class InputMethodBridge(
         return defaultResponse
     }
 
+    /**
+     * 推廣候選字對應的路徑
+     * @param candidatePairJson 候選字對象的 JSON 字符串，例如 {"w": "幹", "p": "e04"}
+     */
+    @JavascriptInterface
     fun setPromoteCandidate(candidatePairJson: String) {
         optimizer?.let {
             val candidatePair = JsonConverter.parseCandidatePairFromJson(candidatePairJson)
             if (candidatePair != null) {
                 it.optimizePath(candidatePair)
+                Log.d(TAG, "Promoted candidate pair: $candidatePairJson")
             } else {
                 Log.e(TAG, "Failed to parse candidate pair from JSON: $candidatePairJson")
             }
@@ -149,6 +155,21 @@ class InputMethodBridge(
         val clip = ClipData.newPlainText("輸入文字", text)
         clipboard.setPrimaryClip(clip)
         Log.d(TAG, "Copied to clipboard: $text")
+    }
+
+    @JavascriptInterface
+    fun getClipboardText(): String {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = clipboard.primaryClip
+        if (clip != null && clip.itemCount > 0) {
+            val item = clip.getItemAt(0)
+            val text = item.text.toString()
+            Log.d(TAG, "Clipboard text: $text")
+            return text
+        } else {
+            Log.d(TAG, "Clipboard is empty.")
+            return ""
+        }
     }
 
     @JavascriptInterface

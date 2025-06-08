@@ -12,13 +12,17 @@
         <div class="text-area-container">
             <textarea class="text-area" id="textArea" placeholder="請輸入文字..."></textarea>
             <div class="text-display" id="textDisplay"></div>
+            <div class="right-top" style="width: 70px;">
+                <button class="special-button blue-button" id="clearTextBtn" style="width: 100%;" title="清空文字">清空</button>
+                <button class="special-button blue-button" id="pasteTextBtn" style="width: 100%;" title="貼上文字">貼上</button>
+            </div>
         </div>
         <div class="phonetic-container">
             <div class="phonetic-label">注音：</div>
             <div class="phonetic-display" id="phoneticDisplay">
                 <div class="phonetic-char empty">ㄅ</div>
             </div>
-            <button class="clear-phonetic" id="clearPhonetic">清除</button>
+            <button class="special-button red-button" id="clearPhonetic">清除</button>
         </div>
     </div>
 
@@ -36,7 +40,7 @@
             <div class="keyboard-rows">
                 <!-- 第一排：數字鍵 -->
                 <div class="row row1">
-                    <div class="key" id="backtick">`</div>
+                    <div class="key" id="backtick" data-value="`" data-special="0">`</div>
                     <div class="key" id="key1" data-value="1" data-special="0">1</div>
                     <div class="key" id="key2" data-value="2" data-special="0">2</div>
                     <div class="key" id="key3" data-value="3" data-special="0">3</div>
@@ -49,12 +53,12 @@
                     <div class="key" id="key0" data-value="0" data-special="0">0</div>
                     <div class="key" id="minus" data-value="-" data-special="0">-</div>
                     <div class="key" id="equal" data-value="=" data-special="0">=</div>
-                    <div class="key" id="backspace" data-value="←" data-special="1">Backspace</div>
+                    <div class="key" id="backspace" data-value="←" data-special="1">⌫</div>
                 </div>
 
                 <!-- 第二排：QWERTY -->
                 <div class="row row2">
-                    <div class="key" id="tab" data-special="1">Tab</div>
+                    <div class="key" id="tab" data-value="	" data-special="1">Tab</div>
                     <div class="key" id="keyQ" data-value="q" data-special="0">Q</div>
                     <div class="key" id="keyW" data-value="w" data-special="0">W</div>
                     <div class="key" id="keyE" data-value="e" data-special="0">E</div>
@@ -108,10 +112,10 @@
                     <div class="key" id="ctrlLeft" data-special="1">複製</div>
                     <div class="key" id="symbol" data-special="1">?123</div>
                     <div class="key" id="altLeft" data-special="1">Eng</div>
-                    <div class="key" id="space" data-special="0"></div>
+                    <div class="key" id="keySpace" data-value=" " data-special="0"> </div>
                     <div class="key" id="altRight" data-special="1">半</div>
-                    <div class="key" id="fun" data-special="1">⚙️</div>
-                    <div class="key" id="menu" data-special="1">Menu</div>
+                    <div class="key" id="fun" data-special="1">⚙️</div><!-- // TODO 待定 -->
+                    <div class="key" id="menu" data-special="1">Menu</div><!-- // TODO 待定 -->
                     <div class="key" id="ctrlRight" data-special="1">複製</div>
                 </div>
             </div>
@@ -184,19 +188,22 @@
             const text = textArea.value;
             const beforeCursor = text.substring(0, cursorPosition);
             const afterCursor = text.substring(cursorPosition);
-            
             // 計算游標高度（基於字體大小）
             const fontSize = window.getComputedStyle(textDisplay).fontSize;
             const lineHeight = window.getComputedStyle(textDisplay).lineHeight;
             const cursorHeight = lineHeight !== 'normal' ? lineHeight : fontSize;
-            
             textDisplay.innerHTML = escapeHtml(beforeCursor) + `<span class="custom-cursor" style="height: ${cursorHeight}"></span>` + escapeHtml(afterCursor);
         }
 
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;")
+                .replace(/ /g, "&nbsp;")   // 所有空格轉成 &nbsp;
+                .replace(/\n/g, "<br>");   // 換行轉成 <br>
         }
 
         function setCursorPosition(pos) {

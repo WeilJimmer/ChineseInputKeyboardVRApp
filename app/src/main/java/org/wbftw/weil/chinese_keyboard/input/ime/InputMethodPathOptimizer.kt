@@ -1,5 +1,6 @@
 package org.wbftw.weil.chinese_keyboard.input.ime
 
+import android.util.Log
 import org.wbftw.weil.chinese_keyboard.input.utils.CandidateClass
 import org.wbftw.weil.chinese_keyboard.input.utils.UniformTrieNode
 
@@ -10,6 +11,8 @@ import org.wbftw.weil.chinese_keyboard.input.utils.UniformTrieNode
  */
 @Suppress("unused")
 class InputMethodPathOptimizer(private val dictionaryRoot: UniformTrieNode?) {
+
+    private val TAG = "InputMethodPathOptimizer"
 
     companion object {
 
@@ -59,6 +62,7 @@ class InputMethodPathOptimizer(private val dictionaryRoot: UniformTrieNode?) {
 
     fun optimizePath(candidatePair: CandidateClass.CandidatePair) {
         if (dictionaryRoot != null) {
+            Log.d(TAG, "Optimizing path for candidate: ${candidatePair.candidateString}")
             optimizePath(candidatePair.fullPath, -1, candidatePair.candidateString)
         }
     }

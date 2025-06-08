@@ -41,6 +41,7 @@ class JsonConverter {
         fun candidatesResultToJson(candidates: List<CandidateClass.CandidatePair>, charList: List<Char>?, hasNextPage: Boolean): String {
             val candidatesPairListJson = candidatesListToJson(candidates)
             val charListJson = charListToJson(charList)
+            println("""{"words":$candidatesPairListJson,"chars":$charListJson,"hasNextPage":$hasNextPage}""")
             return """{"words":$candidatesPairListJson,"chars":$charListJson,"hasNextPage":$hasNextPage}"""
         }
 
