@@ -48,7 +48,7 @@ _點擊上圖觀看影片示範_
 
 ## 🔧 安裝方式
 
-1. 下載 [APK](releases) 至你的 Meta Quest 3 裝置
+1. 下載 [APK](https://github.com/WeilJimmer/ChineseInputKeyboardVRApp/releases) 至你的 Meta Quest 3 裝置
 2. 使用 SideQuest 或 ADB 安裝
 3. 啟動應用後即可使用中文注音鍵盤
 
