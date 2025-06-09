@@ -21,7 +21,7 @@
 
             <layout
                 android:defaultWidth="1280dp"
-                android:defaultHeight="600dp"
+                android:defaultHeight="640dp"
                 android:gravity="center" />
 
             <meta-data android:name="com.oculus.supportedDevices" android:value="quest|quest2|quest3" />

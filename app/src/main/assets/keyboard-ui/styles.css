@@ -12,7 +12,7 @@ body {
 	background-color: #444;
 	display: flex;
 	flex-direction: column;
-	min-height: 200px;
+	min-height: 250px;
 }
 
 .text-area-container {
@@ -42,7 +42,7 @@ body {
 	color: transparent;
 	caret-color: transparent;
 	position: relative;
-	z-index: 2;
+	z-index: 0;
 	line-height: 1.2;
 }
 
@@ -216,7 +216,7 @@ body {
 	resize: vertical;
 	overflow: hidden;
 	min-height: 200px;
-	max-height: calc(100vh - 160px);
+	max-height: calc(100vh - 250px);
 	font-family: 'Courier New', Courier, monospace;
 }
 
@@ -251,9 +251,11 @@ body {
 .candidates-row {
 	display: flex;
 	gap: 3px;
-	margin-bottom: 8px;
-	padding: 0 8px;
+	margin-bottom: 16px;
+    padding: 0px 8px 8px 8px;
 	flex: 1;
+	overflow-x: scroll;
+    flex: 1;
 }
 
 .candidate {
@@ -354,6 +356,24 @@ body {
 	width: 3px;
 }
 
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+::-webkit-scrollbar-track {
+	background: #1a1a1a; /* 深色背景讓滾動軌道更黯淡 */
+}
+
+::-webkit-scrollbar-thumb {
+	background: #444; /* 深灰色捲動條 */
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #666; /* 滑鼠 hover 時略亮 */
+}
+
 /* 第一排按鍵寬度比例 */
 .row1 .key:nth-child(1) { flex: 1; } /* ` */
 .row1 .key:nth-child(2) { flex: 1; } /* 1 */
@@ -433,15 +453,15 @@ body {
 	.keyboard {
 		padding: 4px 0;
 	}
-	
+
 	.candidates-row {
 		padding: 0 4px;
 	}
-	
+
 	.keyboard-rows {
 		padding: 0 4px;
 	}
-	
+
 	.row {
 		gap: 2px;
 		margin-bottom: 2px;

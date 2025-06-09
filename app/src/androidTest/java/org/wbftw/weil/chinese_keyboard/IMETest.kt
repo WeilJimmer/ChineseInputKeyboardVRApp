@@ -48,13 +48,13 @@ class IMETest {
         // 測試獲取節點
         assert(dictionary != null) { "Dictionary should not be null after loading." }
         val node_j = dictionary?.getChildNode('j')
-        assert(node_j != null) { "Node should not be null." }
+        assert(node_j != null && node_j.getFullPath()==listOf('j')) { "Node should not be null." }
         println("[Test] Node 'j' loaded successfully: $node_j")
         val node_ji = node_j?.getChildNode('i')
-        assert(node_ji != null) { "Node 'ji' should not be null." }
+        assert(node_ji != null && node_ji.getFullPath()==listOf('j','i')) { "Node 'ji' should not be null." }
         println("[Test] Node 'ji' loaded successfully: $node_ji")
         val node_ji3 = node_ji?.getChildNode('3')
-        assert(node_ji3 != null) { "Node 'ji3' should not be null." }
+        assert(node_ji3 != null && node_ji3.getFullPath()==listOf('j','i','3')) { "Node 'ji3' should not be null." }
         println("[Test] Node 'ji3' loaded successfully: $node_ji3")
     }
 
@@ -86,12 +86,10 @@ class IMETest {
             val pageConfigure = CandidateClass.PageConfigure()
             val candidateManager = InputMethodCandidateManager(dictionary!!, pageConfigure)
 
-            // 當前候選字列表(帶路徑信息)
-            var candidatesPair: List<CandidateClass.CandidatePair> = emptyList()
-
             candidateManager.setInput("ji3")
 
-            candidatesPair = candidateManager.getCurrentPageCandidates()
+            // 當前候選字列表(帶路徑信息)
+            var candidatesPair: List<CandidateClass.CandidatePair> = candidateManager.getCurrentPageCandidates()
             println("[Test] Candidates with path for 'ji3': $candidatesPair")
             assert(candidatesPair.isNotEmpty()) { "Candidates with path for 'ji3' should not be empty." }
 
@@ -122,13 +120,10 @@ class IMETest {
             val pageConfigure = CandidateClass.PageConfigure( perPageSize = 3, maxCandidatesPerPath = 10)
             val candidateManager = InputMethodCandidateManager(dictionary!!, pageConfigure)
 
-            var candidatesResult : CandidateClass.CandidateResult
-            var candidatesPair: List<CandidateClass.CandidatePair> = emptyList()
-
             candidateManager.setInput("u")
 
-            candidatesResult = candidateManager.getCurrentPageCandidatesFullInformation()
-            candidatesPair = candidatesResult.candidates.map { CandidateClass.CandidatePair.from(it) }
+            var candidatesResult : CandidateClass.CandidateResult = candidateManager.getCurrentPageCandidatesFullInformation()
+            var candidatesPair: List<CandidateClass.CandidatePair> = candidatesResult.candidates.map { CandidateClass.CandidatePair.from(it) }
             println("[Test] Candidates with path for 'u' (Page 1): $candidatesPair")
             println("[Test] Has next page: ${candidatesResult.hasNextPage}, Current page: ${candidatesResult.currentPage}")
             assert(candidatesPair.isNotEmpty()) { "Candidates with path for 'u' should not be empty." }

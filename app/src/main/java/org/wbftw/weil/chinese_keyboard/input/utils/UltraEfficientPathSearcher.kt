@@ -2,6 +2,7 @@ package org.wbftw.weil.chinese_keyboard.input.utils
 
 import org.wbftw.weil.chinese_keyboard.input.utils.CandidateClass.CandidateResult
 import java.util.LinkedList
+import java.util.PriorityQueue
 import java.util.Queue
 
 /**
@@ -20,40 +21,58 @@ class UltraEfficientPathSearcher() {
             BACKWARD(-1) // for lookup
         }
     }
-
     /**
-     * 獲取所有發音的節點清單
-     * 這個方法使用BFS遍歷UniformTrieNode樹結構，並返回所有節點的列表
+     * 根據總路徑分數獲取候選節點清單（使用 Best-First Search）
      */
-    fun bfsSearch(root: UniformTrieNode): List<UniformTrieNode> {
-
-        val targetPath: String = root.getFullPath().joinToString()
+    fun bestFirstSearch(root: UniformTrieNode): List<UniformTrieNode> {
+        val targetPath = root.getFullPath().joinToString()
         if (bfsCachePath == targetPath && bfsResultCache != null) {
             return bfsResultCache!!
         }
 
-        val result = mutableListOf<UniformTrieNode>()
-        val queue: Queue<UniformTrieNode> = LinkedList()
-        val visited = mutableSetOf<UniformTrieNode>()
+        data class ScoredNode(
+            val node: UniformTrieNode,
+            val totalScore: Int,
+            val pathLength: Int
+        ) {
+            val normalizedScore: Double get() = totalScore.toDouble() / pathLength
+        }
 
-        queue.offer(root)
-        visited.add(root)
+        val result = mutableListOf<UniformTrieNode>()
+        val queue = PriorityQueue<ScoredNode>(compareByDescending { it.normalizedScore })
+        val bestScoreMap = mutableMapOf<UniformTrieNode, Double>()
+
+        val rootScore = root.getSelfScore()
+        queue.offer(ScoredNode(root, rootScore, 1))
+        bestScoreMap[root] = rootScore.toDouble()
 
         while (queue.isNotEmpty()) {
-            val current = queue.poll()
-            if (current != null) {
+            val scoredNode = queue.poll()
+            if (scoredNode==null) continue // 防止空值
+            val current = scoredNode.node
+            val totalScore = scoredNode.totalScore
+            val pathLength = scoredNode.pathLength
+
+            if (current.isFinalNode()) {
                 result.add(current)
             }
 
-            current?.getChildrenNodes()
-                ?.filter { it !in visited }
-                ?.forEach { child ->
-                    visited.add(child)
-                    queue.offer(child)
+            for (child in current.getChildrenNodes()) {
+                val childScore = child.getSelfScore()
+                val newTotalScore = totalScore + childScore
+                val newPathLength = pathLength + 1
+                val newNormalized = newTotalScore.toDouble() / newPathLength
+
+                val recorded = bestScoreMap[child]
+                if (recorded == null || newNormalized > recorded) {
+                    bestScoreMap[child] = newNormalized
+                    queue.offer(ScoredNode(child, newTotalScore, newPathLength))
                 }
+            }
         }
 
         bfsResultCache = result
+        bfsCachePath = targetPath
         return result
     }
 
@@ -67,11 +86,6 @@ class UltraEfficientPathSearcher() {
         val maxLength = 5
         val candidatesSize = node.getCandidatesSize()
         val targetCount = (candidatesSize * percent).toInt().coerceAtMost(maxLength).coerceAtLeast(1)
-
-        if (targetCount <= 0) {
-            return emptyList() // 如果候選字數量過少，返回空列表
-        }
-
         return node.getPromoteCandidates(0, targetCount)
     }
 
@@ -146,7 +160,7 @@ class UltraEfficientPathSearcher() {
         for (ni in startNodeIndex until endNodeIndex) { //endNodeIndex is last bfsResultCache index, meaning the end of the search
             val node = bfsResultCache!![ni]
             val nodeFullPath: List<Char> = node.getFullPath()
-            val nodeCandidates: List<String> = findCandidateByNodeWithLimit(node) // 候選字已被限制數量
+            val nodeCandidates: List<String> = findCandidateByNodeWithLimit(node) // 候選字已被限制數量，每個節點只取特定數量。
 
             if (resultCandidates.size >= perPage){
                 hasNextPage = true // 超過每頁限制，標記為有下一頁

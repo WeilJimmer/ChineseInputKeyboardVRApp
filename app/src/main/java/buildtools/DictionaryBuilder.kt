@@ -88,9 +88,6 @@ object DictionaryBuilder {
             entries.add(Pair(path, word))
         }
 
-        // 反向處理項目列表，確保優先級正確
-        entries.reverse()
-
         // 構建樹
         var entryCount = 0
         for ((path, word) in entries) {

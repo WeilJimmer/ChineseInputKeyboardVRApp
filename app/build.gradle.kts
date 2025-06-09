@@ -12,8 +12,8 @@ android {
         applicationId = "org.wbftw.weil.chinese_keyboard"
         minSdk = 34
         targetSdk = 36
-        versionCode = 99
-        versionName = "0.9.9"
+        versionCode = 100
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

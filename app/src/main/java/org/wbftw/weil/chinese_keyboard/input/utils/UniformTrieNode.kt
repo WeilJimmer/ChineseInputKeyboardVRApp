@@ -9,9 +9,24 @@ data class UniformTrieNode(
     private val childrenKeys = mutableListOf<Char>() // 維護子節點順序
     private val childrenMap = mutableMapOf<Char, UniformTrieNode>() // 快速查找
     private val candidates = mutableListOf<String>() // 終端候選字
+    private val candidateScore = mutableMapOf<String, Int>() // 候選字分數
     private var parentFullPathChars: List<Char> = listOf() // 父節點字符列表
     private var currentFullPathChars: List<Char> = listOf() // 當前節點到根節點的完整字符路徑
-    private var isRoot: Boolean = false
+    private var isRoot: Boolean = false // 標記是否為根節點
+    private var selfScore: Int = 0 // 自身分數，預設為0
+
+    // 快取排序的結果
+    @Transient
+    private var sortedChildrenKeysCache: List<Char>? = null // 排序的子節點鍵快取
+
+    @Transient
+    private var isChildrenKeysCacheDirty: Boolean = true // 標記子節點鍵快取是否髒
+
+    @Transient
+    private var sortedCandidatesCache: List<String>? = null // 排序的候選字快取
+
+    @Transient
+    private var isCandidatesCacheDirty: Boolean = true // 標記候選字快取是否髒
 
     constructor(char: Char = '|', parentChars: List<Char> = listOf()) : this(char) {
         this.parentFullPathChars = parentChars
@@ -45,63 +60,175 @@ data class UniformTrieNode(
         return this
     }
 
+    /**
+     * 是否為終端節點
+     * @return boolean
+     */
     fun isFinalNode(): Boolean {
         return candidates.isNotEmpty() // 有候選字即為終端節點
     }
 
+    /**
+     * 是否為非終端節點
+     * @return boolean
+     */
     fun isNotFinalNode(): Boolean {
         return candidates.isEmpty() // 無候選字即為非終端節點
     }
 
+    /**
+     * 取得子節點分數
+     * @param char 子節點字符
+     */
+    fun getChildrenScore(char: Char): Int {
+        return getChildNode(char)?.getSelfScore()?:0 // 返回子節點的分數，預設為 0
+    }
+
+    /**
+     * 設置子節點分數
+     * @param char 子節點字符
+     * @param score 分數
+     * @return 返回當前節點
+     */
+    fun setChildrenScore(char: Char, score: Int = 0): UniformTrieNode {
+        if (childrenMap.containsKey(char)) {
+            getChildNode(char)?.setSelfScore(score) // 設置子節點的分數(為了排序用)
+            isChildrenKeysCacheDirty = true // 標記子節點鍵快取為髒
+            sortedChildrenKeysCache = null // 清除排序快取
+        }
+        return this
+    }
+
+    /**
+     * 設置當前節點的分數
+     * @return 返回當前節點
+     */
+    fun setSelfScore(score: Int = 0): UniformTrieNode {
+        selfScore = score // 設置自身分數
+        return this
+    }
+
+    /**
+     * 獲取自身分數
+     * @return 返回自身分數
+     */
+    fun getSelfScore(): Int {
+        return selfScore // 返回自身分數
+    }
+
+    /**
+     * 設置候選字分數
+     * @param candidate 候選字
+     * @return score 分數，預設為 0
+     */
+    fun getCandidateScore(candidate: String): Int {
+        return candidateScore.getOrDefault(candidate, 0) // 返回候選字的分數，預設為 0
+    }
+
+    /**
+     * 設置候選字分數
+     * @param candidate 候選字
+     * @param score 分數
+     * @return 返回當前節點
+     */
+    fun setCandidateScore(candidate: String, score: Int = 0): UniformTrieNode {
+        if (candidate.isNotEmpty()) {
+            candidateScore[candidate] = score // 設置候選字的分數
+            isCandidatesCacheDirty = true // 標記候選字快取為髒
+            sortedCandidatesCache = null // 清除排序快取
+        }
+        return this
+    }
+
+    /**
+     * 提升子節點分數
+     * 如果子節點不存在，則不進行推廣
+     */
     fun promoteChild(char: Char) {
-        val index = childrenKeys.indexOf(char)
-        if (index != -1) {
-            childrenKeys.removeAt(index)
-            childrenKeys.add(char) // 移到最末 = 最高優先級
+        if (!childrenMap.containsKey(char)) {
+            return // 如果沒有這個子節點，則不進行推廣
         }
+        setChildrenScore(char, getChildrenScore(char) + 1) // 增加子節點分數
     }
 
-    fun promoteCandidate(index: Int, candidate: String) {
-        if (index>=0 && index in candidates.indices && candidates[index] == candidate) {
-            candidates.removeAt(index)
-            candidates.add(candidate) // 移到最末 = 最高優先級
-        }else{
-            val wordIndex = candidates.indexOf(candidate)
-            if (wordIndex != -1) {
-                candidates.removeAt(wordIndex)
-                candidates.add(candidate) // 移到最末 = 最高優先級
-            }
+    /**
+     * 提升候選字分數
+     * 如果候選字不存在，則不進行推廣
+     * @param candidate 候選字
+     */
+    fun promoteCandidate(candidate: String) {
+        if (candidate.isEmpty()) {
+            return // 如果候選字為空，則不進行推廣
         }
+        setCandidateScore(candidate, getCandidateScore(candidate) + 1) // 增加候選字分數
     }
 
+    /**
+     * 獲取排序的子節點鍵列表，分數從高到低排序
+     * @return 返回排序後的子節點鍵列表
+     */
     fun getOrderedChildrenKeys(): List<Char> {
-        return childrenKeys.asReversed() // 從最後開始遍歷
+        if (isChildrenKeysCacheDirty || sortedChildrenKeysCache == null) {
+            // 如果快取髒或未初始化，則重新計算排序
+            sortedChildrenKeysCache = childrenKeys.sortedByDescending { getChildrenScore(it) }
+            isChildrenKeysCacheDirty = false // 重置髒標記
+        }
+        return sortedChildrenKeysCache ?: emptyList() // 返回排序後的子節點鍵列表
     }
 
+    /**
+     * 獲取排序的候選字列表，分數從高到低排序
+     * @return 返回排序後的候選字列表
+     */
     fun getChildrenNodes(): List<UniformTrieNode> {
-        return childrenKeys.mapNotNull { childrenMap[it] }.asReversed() // 返回子節點列表，從最後開始
+        return getOrderedChildrenKeys().mapNotNull { childrenMap[it] } // 返回子節點列表，分數高到低排序
     }
 
+    /**
+     * 獲取子節點
+     * @param char 子節點字符
+     * @return 返回子節點，如果不存在則返回null
+     */
     fun getChildNode(char: Char): UniformTrieNode?{
         return childrenMap[char]
     }
 
+    /**
+     * 獲取當前節點的字符
+     * @return 返回當前節點的字符
+     */
     fun getKey(): Char {
         return char
     }
 
     /**
-     * 獲取第一個子節點 (最高優先級別是最後一個)
+     * 獲取第一個子節點 (最高優先級別是分數最高的子節點)
      * @return 返回第一個子節點，如果沒有則返回null
      */
     fun getFirstNode(): UniformTrieNode? {
-        return if (childrenKeys.isNotEmpty()) {
-            childrenMap[childrenKeys.last()] ?: UniformTrieNode() // 返回最後一個子節點
-        } else {
-            null
-        }
+        return getChildrenNodes().firstOrNull() // 返回分數最高的子節點
     }
 
+    /**
+     * 獲取當前節點的完整候選字列表(按照分數高到低)
+     * @return 返回排序後的候選字列表，分數從高到低排序
+     */
+    fun getOrderedCandidates(): List<String> {
+        if (isCandidatesCacheDirty || sortedCandidatesCache == null) {
+            // 如果快取髒或未初始化，則重新計算排序
+            sortedCandidatesCache = candidates.sortedByDescending { getCandidateScore(it) }
+            isCandidatesCacheDirty = false // 重置髒標記
+        }
+        return sortedCandidatesCache ?: emptyList() // 返回排序後的候選字列表
+    }
+
+    /**
+     * 過濾候選字列表
+     * @param list 要過濾的候選字列表
+     * @param index 開始索引
+     * @param limit 返回的候選字數量限制
+     * @return 返回過濾後的候選字列表
+     */
     fun filterList(list: List<String>, index: Int, limit: Int): List<String> {
         // 空列表或索引超出範圍時直接返回空列表
         if (list.isEmpty() || index >= list.size) {
@@ -120,22 +247,14 @@ data class UniformTrieNode(
 
     /**
      * 獲取推廣候選字列表
-     * @return 返回候選字列表，從優先級最高到最低。(內部結構，最末尾為最高優先級)
+     * @return 返回候選字列表，優先級從分數最高到最低。
      */
     fun getPromoteCandidates(index: Int, limit: Int = 0): List<String>{
         if (candidates.isEmpty()) {
             return emptyList() // 如果沒有候選字，返回空列表
         }
-        val promoted = candidates.toMutableList().asReversed()
+        val promoted = getOrderedCandidates()
         return filterList(promoted, index, limit)
-    }
-
-    /**
-     * 獲取當前節點的候選字列表
-     * @return 返回子節點候選字的列表
-     */
-    fun getCandidates(): List<String> {
-        return candidates.toList() // 返回候選字列表的副本
     }
 
     /**

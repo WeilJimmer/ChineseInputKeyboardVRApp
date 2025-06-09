@@ -20,11 +20,10 @@ class InputMethodPathOptimizer(private val dictionaryRoot: UniformTrieNode?) {
          * 推廣已使用的路徑
          * @param path 要推廣的路徑
          * @param rootNode 節點(root節點)
-         * @param wordIndex 選中的候選字索引
          * @param chooseWord 選中的候選字
          */
-        fun promoteUsedPath(path: List<Char>, rootNode: UniformTrieNode, wordIndex: Int, chooseWord: String) {
-            if (path.isEmpty() || wordIndex < 0) {
+        fun promoteUsedPath(path: List<Char>, rootNode: UniformTrieNode, chooseWord: String) {
+            if (path.isEmpty()) {
                 return // 如果路徑為空或索引無效，直接返回
             }
 
@@ -39,7 +38,7 @@ class InputMethodPathOptimizer(private val dictionaryRoot: UniformTrieNode?) {
 
             // 如果是最後一個節點，將選中的關鍵詞提升優先級
             if (current.isFinalNode()){
-                current.promoteCandidate(wordIndex, chooseWord)
+                current.promoteCandidate( chooseWord)
             }
 
             // 從上到下推廣整條路徑
@@ -54,16 +53,16 @@ class InputMethodPathOptimizer(private val dictionaryRoot: UniformTrieNode?) {
 
     }
 
-    fun optimizePath(path: List<Char>, wordIndex: Int, chooseWord: String) {
+    fun optimizePath(path: List<Char>, chooseWord: String) {
         if (dictionaryRoot != null) {
-            promoteUsedPath(path, dictionaryRoot, wordIndex, chooseWord)
+            promoteUsedPath(path, dictionaryRoot, chooseWord)
         }
     }
 
     fun optimizePath(candidatePair: CandidateClass.CandidatePair) {
         if (dictionaryRoot != null) {
             Log.d(TAG, "Optimizing path for candidate: ${candidatePair.candidateString}")
-            optimizePath(candidatePair.fullPath, -1, candidatePair.candidateString)
+            optimizePath(candidatePair.fullPath, candidatePair.candidateString)
         }
     }
 

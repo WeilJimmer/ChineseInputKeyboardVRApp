@@ -18,24 +18,41 @@ class TrieTreeTest {
 
         // 初始化全局推廣樹
 
-        // 建立樹結構 [字典從最末尾開始建立]
+        // 建立樹結構
+
+        // 樹結構如下所示：
+        // 根|            根節點
+        // 　|              |
+        // 一|              1
+        // 　|             / \
+        // 　|            /   \
+        // 　|           /     \
+        // 　|          /       \
+        // 　|         /         \
+        // 二|        2           3
+        // 　|       / \         / \
+        // 　|      /   \       /   \
+        // 　|     /     \     /     \
+        // 三|    4       5   6       7
+        // 　|  / | \    / \  |       |
+        // 字| a  b  c  d   e f       g
 
         val node1 = rootNode.addChild('1') // 1 level
-        val node13 = node1.addChild('3') // 2 level
         val node12 = node1.addChild('2') // 2 level
-        val node137 = node13.addChild('7') // 3 level
-        val node136 = node13.addChild('6') // 3 level
-        val node125 = node12.addChild('5') // 3 level
+        val node13 = node1.addChild('3') // 2 level
         val node124 = node12.addChild('4') // 3 level
+        val node125 = node12.addChild('5') // 3 level
+        val node136 = node13.addChild('6') // 3 level
+        val node137 = node13.addChild('7') // 3 level
 
         // 添加候選字 [最早添加，排位越低。]
 
-        node124.addCandidate("c")
-        node124.addCandidate("b")
         node124.addCandidate("a")
+        node124.addCandidate("b")
+        node124.addCandidate("c")
 
-        node125.addCandidate("e")
         node125.addCandidate("d")
+        node125.addCandidate("e")
 
         node136.addCandidate("f")
 
@@ -47,7 +64,7 @@ class TrieTreeTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("org.wbftw.weil.chinese_keyboard", appContext.packageName)
+        assertEquals("org.wbftw.weil.chinese_keyboard.dev", appContext.packageName)
     }
 
     @Test
@@ -69,12 +86,12 @@ class TrieTreeTest {
     @Test
     fun testPromoteUsedPath() {
         // 測試推廣已使用的路徑
-        InputMethodPathOptimizer.promoteUsedPath("124".toCharArray().toList(), rootNode, 1, "b")
+        InputMethodPathOptimizer.promoteUsedPath("124".toList(), rootNode, "b")
 
         // 檢查推廣後的候選字列表
         val candidates124AfterPromotion = TrieHelper.getCandidateList("124", rootNode)
         println(candidates124AfterPromotion)
-        assert(candidates124AfterPromotion == listOf("b", "a", "c")) // b 被提升到最後一位，從最後面開始顯示，會顯示在第一個
+        assert(candidates124AfterPromotion == listOf("b", "a", "c")) // b 被提升，會顯示在第一個
 
         val candidates12AfterPromotion = TrieHelper.getCandidateList("12", rootNode)
         println(candidates12AfterPromotion)
@@ -88,7 +105,7 @@ class TrieTreeTest {
     @Test
     fun testPromotePath() {
         // 測試推廣路徑
-        InputMethodPathOptimizer.promoteUsedPath("137".toCharArray().toList(), rootNode, 0, "g")
+        InputMethodPathOptimizer.promoteUsedPath("137".toList(), rootNode, "g")
 
         // 檢查推廣後的候選字列表
         val candidates137AfterPromotion = TrieHelper.getCandidateList("137", rootNode)

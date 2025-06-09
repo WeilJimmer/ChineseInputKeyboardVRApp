@@ -86,7 +86,7 @@ class UltraEfficientCandidateProvider {
         maxCandidatesPerPath: Int // 每條路徑的候選字數量限制
     ): CandidateClass.CandidateResult {
 
-        searcher.bfsSearch(node) // 使用路徑搜索器
+        searcher.bestFirstSearch(node) // 使用路徑搜索器
         return searcher.getCurrentPageResult(searchState, perPageSize)
 
     }

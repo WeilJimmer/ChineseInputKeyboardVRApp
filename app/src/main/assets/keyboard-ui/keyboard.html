@@ -15,6 +15,7 @@
             <div class="right-top" style="width: 70px;">
                 <button class="special-button blue-button" id="clearTextBtn" style="width: 100%;" title="清空文字">清空</button>
                 <button class="special-button blue-button" id="pasteTextBtn" style="width: 100%;" title="貼上文字">貼上</button>
+                <button class="special-button blue-button" id="copyTextBtn" style="width: 100%;" title="複製文字">複製</button>
             </div>
         </div>
         <div class="phonetic-container">
@@ -143,7 +144,7 @@
         function handleMouseMove(e) {
             if (!isResizing) return;
             const deltaY = startY - e.clientY;
-            const maxAllowedHeight = window.innerHeight - 160;
+            const maxAllowedHeight = window.innerHeight - 250;
             const newHeight = Math.max(200, Math.min(maxAllowedHeight, startHeight + deltaY));
             document.documentElement.style.setProperty('--keyboard-height', newHeight + 'px');
         }
@@ -167,7 +168,7 @@
         function handleTouchMove(e) {
             if (!isResizing) return;
             const deltaY = startY - e.touches[0].clientY;
-            const maxAllowedHeight = window.innerHeight - 160; // 保留160px給注音區域
+            const maxAllowedHeight = window.innerHeight - 250; // 保留160px給注音區域
             const newHeight = Math.max(200, Math.min(maxAllowedHeight, startHeight + deltaY));
             document.documentElement.style.setProperty('--keyboard-height', newHeight + 'px');
         }

@@ -262,6 +262,11 @@ function addPhonetic(char, keyValue) {
         updatePhoneticDisplay();
         setInput();
         return true;
+    }else if (phoneticBuffer.length === maxPhoneticLength) {
+        // 當注音暫存區已滿，則插入候選字，清除注音暫存區
+        insertSelectedCandidate();
+        phoneticBuffer = []; // 清除注音暫存區
+        updatePhoneticDisplay();
     }
     return false;
 }
@@ -500,10 +505,17 @@ bindFastClick('#clearPhonetic', () => {
 
 bindFastClick('#clearTextBtn', () => {
     $('#textArea').val('');
+    clearPhonetic();
+    updateCandidates([]);
+    console.log('清除文字區和注音暫存區');
 });
 
 bindFastClick('#pasteTextBtn', () => {
     insertTextAtCursor(InputMethodBridge.getClipboardText());
+});
+
+bindFastClick('#copyTextBtn', () => {
+    copyToClipboard(document.getElementById('textArea').value);
 });
 
 // 初始化按鈕事件
