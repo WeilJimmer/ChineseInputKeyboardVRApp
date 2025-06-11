@@ -6,6 +6,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.webkit.JavascriptInterface
@@ -50,13 +52,17 @@ import androidx.xr.compose.subspace.layout.height
 import androidx.xr.compose.subspace.layout.movable
 import androidx.xr.compose.subspace.layout.resizable
 import androidx.xr.compose.subspace.layout.width
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.wbftw.weil.chinese_keyboard.converter.JsonConverter
 import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodCandidateManager
 import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodPathOptimizer
+import org.wbftw.weil.chinese_keyboard.input.ime.PersonalizedScoreManager
 import org.wbftw.weil.chinese_keyboard.input.utils.CandidateClass
 import org.wbftw.weil.chinese_keyboard.loader.DictionaryLoader
 import org.wbftw.weil.chinese_keyboard.ui.theme.Chinese_keyboardTheme
-
+import java.io.File
 
 // JavaScript Bridge
 @Suppress("unused", "MemberVisibilityCanBePrivate")
@@ -180,6 +186,53 @@ class InputMethodBridge(
 
 class MainActivity : ComponentActivity() {
 
+    private val autoSaveHandler = Handler(Looper.getMainLooper())
+    private lateinit var autoSaveRunnable: Runnable
+
+    private fun startAutoSaveTask() {
+        autoSaveRunnable = object : Runnable {
+            override fun run() {
+                CoroutineScope(Dispatchers.IO).launch {
+                    if (PersonalizedScoreManager.getValueChanged()){
+                        Log.d("AutoSave", "Saving personalized scores to JSON")
+                        try{
+                            val jsonString = PersonalizedScoreManager.saveToJson()
+                            val file = File(filesDir, "personalized_scores.json")
+                            file.writeText(jsonString)
+                            PersonalizedScoreManager.setValueChanged(false)
+                            Log.d("AutoSave", "Personalized scores saved successfully")
+                        }catch (e: Exception) {
+                            Log.e("AutoSave", "Error saving personalized scores: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    } else {
+                        Log.d("AutoSave", "No changes detected, skipping save")
+                    }
+                }
+                autoSaveHandler.postDelayed(this, 10000L)
+            }
+        }
+        autoSaveHandler.postDelayed(autoSaveRunnable, 10_000L)
+    }
+
+    private fun readPersonalizedScoresFromFile() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val file = File(filesDir, "personalized_scores.json")
+                if (file.exists()) {
+                    val jsonString = file.readText()
+                    PersonalizedScoreManager.loadFromJson(jsonString)
+                    Log.d("AutoSave", "Personalized scores loaded successfully")
+                } else {
+                    Log.d("AutoSave", "No personalized scores file found, using defaults")
+                }
+            } catch (e: Exception) {
+                Log.e("AutoSave", "Error loading personalized scores: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+    }
+
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -199,7 +252,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        startAutoSaveTask()
+        readPersonalizedScoresFromFile()
+
     }
+
+    override fun onDestroy() {
+        autoSaveHandler.removeCallbacks(autoSaveRunnable)
+        super.onDestroy()
+    }
+
+    // ============ End of MainActivity ============
 }
 
 @SuppressLint("RestrictedApi")

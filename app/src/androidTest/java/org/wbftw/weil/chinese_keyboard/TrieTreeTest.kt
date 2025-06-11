@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodPathOptimizer
+import org.wbftw.weil.chinese_keyboard.input.ime.PersonalizedScoreManager
 import org.wbftw.weil.chinese_keyboard.input.utils.UniformTrieNode
 import org.wbftw.weil.chinese_keyboard.utils.TrieHelper
 
@@ -70,6 +71,9 @@ class TrieTreeTest {
     @Test
     fun testGetCandidateList() {
         // 測試獲取候選字列表
+
+        PersonalizedScoreManager.getInstance().clearScoreDatabase()
+
         val candidates1 = TrieHelper.getCandidateList("1", rootNode)
         println(candidates1)
         assert(candidates1 == listOf("a", "b", "c"))
@@ -86,6 +90,9 @@ class TrieTreeTest {
     @Test
     fun testPromoteUsedPath() {
         // 測試推廣已使用的路徑
+
+        PersonalizedScoreManager.getInstance().clearScoreDatabase()
+
         InputMethodPathOptimizer.promoteUsedPath("124".toList(), rootNode, "b")
 
         // 檢查推廣後的候選字列表
@@ -104,6 +111,8 @@ class TrieTreeTest {
 
     @Test
     fun testPromotePath() {
+        PersonalizedScoreManager.getInstance().clearScoreDatabase()
+
         // 測試推廣路徑
         InputMethodPathOptimizer.promoteUsedPath("137".toList(), rootNode, "g")
 

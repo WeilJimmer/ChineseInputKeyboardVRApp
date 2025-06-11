@@ -10,9 +10,19 @@ import org.wbftw.weil.chinese_keyboard.input.utils.UniformTrieNode
  * 根據用戶選擇優化路徑順序，提高常用候選字的優先級
  */
 @Suppress("unused")
-class InputMethodPathOptimizer(private val dictionaryRoot: UniformTrieNode?) {
+class InputMethodPathOptimizer(scoreTreeInit: UniformTrieNode? = null) {
 
     private val TAG = "InputMethodPathOptimizer"
+    private var scoreTree: UniformTrieNode? = UniformTrieNode() // 用於存儲優化後的路徑樹
+
+    init {
+        if (scoreTreeInit != null) {
+            Log.d(TAG, "Initializing score tree with provided node")
+            scoreTree = scoreTreeInit
+        } else {
+            Log.d(TAG, "Using default empty score tree")
+        }
+    }
 
     companion object {
 
@@ -54,15 +64,23 @@ class InputMethodPathOptimizer(private val dictionaryRoot: UniformTrieNode?) {
     }
 
     fun optimizePath(path: List<Char>, chooseWord: String) {
-        if (dictionaryRoot != null) {
-            promoteUsedPath(path, dictionaryRoot, chooseWord)
-        }
+        scoreTree?.let { promoteUsedPath(path, it, chooseWord) }
     }
 
     fun optimizePath(candidatePair: CandidateClass.CandidatePair) {
-        if (dictionaryRoot != null) {
+        if (scoreTree != null) {
             Log.d(TAG, "Optimizing path for candidate: ${candidatePair.candidateString}")
             optimizePath(candidatePair.fullPath, candidatePair.candidateString)
+        }
+    }
+
+    fun setScoreTree(scoreTreeRead: UniformTrieNode?) {
+        // 設置優化後的路徑樹
+        if (scoreTreeRead != null) {
+            Log.d(TAG, "Setting score tree")
+            scoreTree = scoreTreeRead
+        } else {
+            Log.w(TAG, "Score tree is null, skipping set")
         }
     }
 

@@ -1,5 +1,6 @@
 package org.wbftw.weil.chinese_keyboard.input.utils
 
+import org.wbftw.weil.chinese_keyboard.input.ime.PersonalizedScoreManager
 import java.io.Serializable
 
 @Suppress("unused")
@@ -9,11 +10,9 @@ data class UniformTrieNode(
     private val childrenKeys = mutableListOf<Char>() // 維護子節點順序
     private val childrenMap = mutableMapOf<Char, UniformTrieNode>() // 快速查找
     private val candidates = mutableListOf<String>() // 終端候選字
-    private val candidateScore = mutableMapOf<String, Int>() // 候選字分數
-    private var parentFullPathChars: List<Char> = listOf() // 父節點字符列表
-    private var currentFullPathChars: List<Char> = listOf() // 當前節點到根節點的完整字符路徑
+    private var parentFullPathChars: String = "" // 父節點字符列表
+    private var currentFullPathChars: String = "" // 當前節點到根節點的完整字符路徑
     private var isRoot: Boolean = false // 標記是否為根節點
-    private var selfScore: Int = 0 // 自身分數，預設為0
 
     // 快取排序的結果
     @Transient
@@ -28,9 +27,9 @@ data class UniformTrieNode(
     @Transient
     private var isCandidatesCacheDirty: Boolean = true // 標記候選字快取是否髒
 
-    constructor(char: Char = '|', parentChars: List<Char> = listOf()) : this(char) {
+    constructor(char: Char = '|', parentChars: String = "") : this(char) {
         this.parentFullPathChars = parentChars
-        this.currentFullPathChars = (parentChars.toMutableList().apply { add(char) } ).toList()
+        this.currentFullPathChars = "$parentChars$char" // 當前節點的完整字符路徑
         this.isRoot = parentChars.isEmpty() // 如果沒有父節點，則為根節點
     }
 
@@ -100,11 +99,12 @@ data class UniformTrieNode(
     }
 
     /**
-     * 設置當前節點的分數
+     * 設置自身分數
+     * @param score 分數
      * @return 返回當前節點
      */
-    fun setSelfScore(score: Int = 0): UniformTrieNode {
-        selfScore = score // 設置自身分數
+    fun setSelfScore(score: Int): UniformTrieNode {
+        PersonalizedScoreManager.setPathScore(currentFullPathChars, score) // 設置自身分數
         return this
     }
 
@@ -113,7 +113,7 @@ data class UniformTrieNode(
      * @return 返回自身分數
      */
     fun getSelfScore(): Int {
-        return selfScore // 返回自身分數
+        return PersonalizedScoreManager.getEffectiveScore(currentFullPathChars) // 返回自身分數
     }
 
     /**
@@ -122,7 +122,7 @@ data class UniformTrieNode(
      * @return score 分數，預設為 0
      */
     fun getCandidateScore(candidate: String): Int {
-        return candidateScore.getOrDefault(candidate, 0) // 返回候選字的分數，預設為 0
+        return PersonalizedScoreManager.getEffectiveScore("$currentFullPathChars$candidate") // 獲取候選字的分數
     }
 
     /**
@@ -133,7 +133,7 @@ data class UniformTrieNode(
      */
     fun setCandidateScore(candidate: String, score: Int = 0): UniformTrieNode {
         if (candidate.isNotEmpty()) {
-            candidateScore[candidate] = score // 設置候選字的分數
+            PersonalizedScoreManager.setPathScore("$currentFullPathChars$candidate", score) // 設置候選字的分數
             isCandidatesCacheDirty = true // 標記候選字快取為髒
             sortedCandidatesCache = null // 清除排序快取
         }
