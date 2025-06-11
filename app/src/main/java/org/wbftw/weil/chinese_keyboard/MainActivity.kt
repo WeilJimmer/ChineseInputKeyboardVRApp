@@ -10,6 +10,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.webkit.JavascriptInterface
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -21,7 +23,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.FilledTonalIconButton
@@ -38,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
 import androidx.xr.compose.platform.LocalHasXrSpatialFeature
 import androidx.xr.compose.platform.LocalSpatialCapabilities
 import androidx.xr.compose.platform.LocalSpatialConfiguration
@@ -238,6 +240,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // 全螢幕沉浸式模式：隱藏狀態列和導覽列
+        window.decorView.windowInsetsController?.let { controller ->
+            controller.hide(WindowInsets.Type.systemBars())
+            controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+
+        // 這行可避免狀態列影響佈局
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             Chinese_keyboardTheme {
                 val spatialConfiguration = LocalSpatialConfiguration.current
@@ -276,7 +286,6 @@ fun MySpatialContent(onRequestHomeSpaceMode: () -> Unit) {
             InputMethodWebView(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
             )
         }
         Orbiter(
@@ -307,12 +316,10 @@ fun My2DContent(onRequestFullSpaceMode: () -> Unit) {
             InputMethodWebView(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(16.dp)
             )
             if (LocalHasXrSpatialFeature.current) {
                 FullSpaceModeIconButton(
                     onClick = onRequestFullSpaceMode,
-                    modifier = Modifier.padding(32.dp)
                 )
             }
         }
