@@ -5,9 +5,8 @@ import java.io.Serializable
 
 @Suppress("unused")
 data class UniformTrieNode(
-    val char: Char = '|', // 默認字符為不可識別字符
+    val char: Char = '|', // 預設字符為不可識別字符
 ) : Serializable {
-    private val childrenKeys = mutableListOf<Char>() // 維護子節點順序
     private val childrenMap = mutableMapOf<Char, UniformTrieNode>() // 快速查找
     private val candidates = mutableListOf<String>() // 終端候選字
     private var parentFullPathChars: String = "" // 父節點字符列表
@@ -19,13 +18,7 @@ data class UniformTrieNode(
     private var sortedChildrenKeysCache: List<Char>? = null // 排序的子節點鍵快取
 
     @Transient
-    private var isChildrenKeysCacheDirty: Boolean = true // 標記子節點鍵快取是否髒
-
-    @Transient
     private var sortedCandidatesCache: List<String>? = null // 排序的候選字快取
-
-    @Transient
-    private var isCandidatesCacheDirty: Boolean = true // 標記候選字快取是否髒
 
     constructor(char: Char = '|', parentChars: String = "") : this(char) {
         this.parentFullPathChars = parentChars
@@ -42,7 +35,6 @@ data class UniformTrieNode(
         if (!childrenMap.containsKey(char)) {
             val newNode = UniformTrieNode(char, currentFullPathChars)
             childrenMap[char] = newNode
-            childrenKeys.add(char)
         }
         return childrenMap[char]!!
     }
@@ -92,7 +84,6 @@ data class UniformTrieNode(
     fun setChildrenScore(char: Char, score: Int = 0): UniformTrieNode {
         if (childrenMap.containsKey(char)) {
             getChildNode(char)?.setSelfScore(score) // 設置子節點的分數(為了排序用)
-            isChildrenKeysCacheDirty = true // 標記子節點鍵快取為髒
             sortedChildrenKeysCache = null // 清除排序快取
         }
         return this
@@ -134,7 +125,6 @@ data class UniformTrieNode(
     fun setCandidateScore(candidate: String, score: Int = 0): UniformTrieNode {
         if (candidate.isNotEmpty()) {
             PersonalizedScoreManager.setPathScore("$currentFullPathChars$candidate", score) // 設置候選字的分數
-            isCandidatesCacheDirty = true // 標記候選字快取為髒
             sortedCandidatesCache = null // 清除排序快取
         }
         return this
@@ -168,10 +158,9 @@ data class UniformTrieNode(
      * @return 返回排序後的子節點鍵列表
      */
     fun getOrderedChildrenKeys(): List<Char> {
-        if (isChildrenKeysCacheDirty || sortedChildrenKeysCache == null) {
+        if (sortedChildrenKeysCache == null) {
             // 如果快取髒或未初始化，則重新計算排序
-            sortedChildrenKeysCache = childrenKeys.sortedByDescending { getChildrenScore(it) }
-            isChildrenKeysCacheDirty = false // 重置髒標記
+            sortedChildrenKeysCache = childrenMap.keys.sortedByDescending { getChildrenScore(it) }
         }
         return sortedChildrenKeysCache ?: emptyList() // 返回排序後的子節點鍵列表
     }
@@ -214,10 +203,9 @@ data class UniformTrieNode(
      * @return 返回排序後的候選字列表，分數從高到低排序
      */
     fun getOrderedCandidates(): List<String> {
-        if (isCandidatesCacheDirty || sortedCandidatesCache == null) {
+        if (sortedCandidatesCache == null) {
             // 如果快取髒或未初始化，則重新計算排序
             sortedCandidatesCache = candidates.sortedByDescending { getCandidateScore(it) }
-            isCandidatesCacheDirty = false // 重置髒標記
         }
         return sortedCandidatesCache ?: emptyList() // 返回排序後的候選字列表
     }
@@ -278,7 +266,7 @@ data class UniformTrieNode(
      * @return 返回子節點鍵的列表
      */
     fun dump(): String {
-        return "Children: ${childrenKeys.joinToString(", ")}, Candidates: ${candidates.joinToString(", ")}"
+        return "Children: ${childrenMap.keys.joinToString(", ")}, Candidates: ${candidates.joinToString(", ")}"
     }
 
 
