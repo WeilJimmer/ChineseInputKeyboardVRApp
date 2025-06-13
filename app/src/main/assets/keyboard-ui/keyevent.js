@@ -18,6 +18,10 @@ var phoneticBuffer = [];
 var candidateList = []; // 候選字列表
 var nextPath = ['*']; // 下一個可能的路徑
 
+// ========== Associated World Region ==========
+var inputQueueLimit = 3; // 輸入隊列限制
+var inputQueue = []; // 用於存儲輸入的字符
+
 // ========== UI Region ==========
 var currentPage = 0; // 當前頁面
 var hasNextPage = false; // 是否有下一頁
@@ -75,6 +79,7 @@ function bindFastClickMultiple(selector, handler) {
         let touched = false;
 
         el.addEventListener('touchend', function (e) {
+            e.preventDefault();
             touched = true;
             handler.call(this, e);
         });
@@ -162,6 +167,9 @@ function switchMode() {
     updatePhoneticDisplay();
 }
 
+/*
+    設置輸入法的輸入內容
+*/
 function setInput() {
     if (typeof InputMethodBridge === 'undefined' || phoneticBuffer.length == 0) return;
     const phoneticString = phoneticBuffer.map(p => p.p).join('');
@@ -172,6 +180,10 @@ function setInput() {
     }
 }
 
+/*
+    處理候選字列表
+    從輸入法橋接獲取候選字列表，並更新 UI
+*/
 function processCandidateList(candidateResultJson) {
     let candidateResult = JSON.parse(candidateResultJson);
     candidateList = candidateResult.words || [];
@@ -283,8 +295,23 @@ function backspacePhonetic() {
     return false;
 }
 
+/*
+    候選字被選擇確定時觸發的函數
+*/
 function candidateSelected(word, path='') {
     insertTextAtCursor(word);
+    inputQueue.push(word); // 將選中的候選字加入輸入隊列
+    if (inputQueue.length > inputQueueLimit) {
+        inputQueue.shift(); // 如果輸入隊列超過限制，則移除最早的輸入
+    }
+    if (typeof InputMethodBridge !== 'undefined') {
+        let chars = JSON.parse(InputMethodBridge.getAssociativeWords(inputQueue.join('')))
+        if (chars && chars.length > 0) {
+            setTimeout(()=>{updateCandidates(chars)}, 10); // 延遲更新候選字列表;
+        } else {
+            console.log('沒有關聯詞');
+        }
+    }
     if (typeof InputMethodBridge !== 'undefined' && path!='') {
         InputMethodBridge.setPromoteCandidate(JSON.stringify({"w": word, "p": path}));
         console.log(`選擇候選字：${word}，路徑：${path} 已提交給輸入法管理器優化`);
@@ -426,6 +453,7 @@ bindFastClickMultiple('.key', function() {
                 textArea.value = currentValue.slice(0, selectedStart) + currentValue.slice(selectedEnd);
                 textArea.selectionStart = textArea.selectionEnd = selectedStart;
             }
+            inputQueue = []; // 清空輸入隊列
         }
     } else if (keyId === 'tab') {
         console.log('TAB');
@@ -434,10 +462,12 @@ bindFastClickMultiple('.key', function() {
         console.log('ENTER');
         if (!insertSelectedCandidate()){
             insertTextAtCursor('\n');
+            inputQueue = []; // 清空輸入隊列
         }
     } else if (keyId === 'ctrlLeft' || keyId === 'ctrlRight') {
         console.log('複製文字');
         copyToClipboard(document.getElementById('textArea').value);
+        inputQueue = []; // 清空輸入隊列
     } else if (keyValue!=null && keyValue.length === 1 && !isSpecial) {
         if (keyMode == Mode.ZHUYIN && !shiftPressed && !symbolMode) {
             // 如果是注音模式，且沒有按下 Shift 鍵或符號模式
@@ -507,6 +537,7 @@ bindFastClick('#clearTextBtn', () => {
     $('#textArea').val('');
     clearPhonetic();
     updateCandidates([]);
+    inputQueue = [];
     console.log('清除文字區和注音暫存區');
 });
 

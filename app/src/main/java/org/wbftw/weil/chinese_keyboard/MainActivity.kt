@@ -58,6 +58,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.wbftw.weil.chinese_keyboard.converter.JsonConverter
+import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodAssociativeWordManager
 import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodCandidateManager
 import org.wbftw.weil.chinese_keyboard.input.ime.InputMethodPathOptimizer
 import org.wbftw.weil.chinese_keyboard.input.ime.PersonalizedScoreManager
@@ -81,12 +82,14 @@ class InputMethodBridge(
     val defaultResponse = """"{"words":[], "chars": [], "hasNextPage": false}"""
     var engine: InputMethodCandidateManager? = null
     var optimizer: InputMethodPathOptimizer? = null
+    var wordAssist: InputMethodAssociativeWordManager? = null
     var nextPossiblePath: List<Char>? = listOf()
 
     init {
         rootNode?.let {
             engine = InputMethodCandidateManager(it, pageConfigure)
             optimizer = InputMethodPathOptimizer(it)
+            wordAssist = InputMethodAssociativeWordManager(context, it)
         }
     }
 
@@ -155,6 +158,15 @@ class InputMethodBridge(
         } ?: run {
             Log.e(TAG, "Optimizer is not initialized.")
         }
+    }
+
+    @JavascriptInterface
+    fun getAssociativeWords(input: String): String {
+        wordAssist?.let {
+            val words = it.getAssociativeWords(input)
+            return JsonConverter.charListToJson(words)
+        }
+        return "[]"
     }
 
     @JavascriptInterface
