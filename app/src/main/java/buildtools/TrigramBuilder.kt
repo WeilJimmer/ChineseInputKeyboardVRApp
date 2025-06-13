@@ -82,7 +82,7 @@ object TrigramBuilder {
         rootNode: AssociativeWordNode,
         word: CharArray,
         frequency: Int,
-        threshold: Int = 100
+        threshold: Int = 200
     ): Int {
 
         if (frequency >= threshold) {

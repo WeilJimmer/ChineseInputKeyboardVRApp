@@ -23,7 +23,12 @@ class TrigramTreeTest {
     @Test
     fun testWord() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        val timeTick = System.currentTimeMillis()
         rootNode = DictionaryLoader.loadTrigramDictionary(context)
+        val timeCost = System.currentTimeMillis() - timeTick
+
+        println("Time cost to load dictionary: $timeCost ms")
 
         assertNotNull(rootNode)
 
