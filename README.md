@@ -2,6 +2,7 @@
 
 ![GitHub License](https://img.shields.io/github/license/WeilJimmer/ChineseInputKeyboardVRApp)
 ![GitHub Release](https://img.shields.io/github/v/release/WeilJimmer/ChineseInputKeyboardVRApp)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/WeilJimmer/ChineseInputKeyboardVRApp/total)
 
 **Chinese Zhuyin Input Keyboard for VR (Android App)**  
 為 **Meta Quest 3** 打造的 **中文注音輸入鍵盤** App，方便您快速複製中文內容並貼上到其他應用。
